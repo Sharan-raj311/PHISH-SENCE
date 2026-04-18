@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PHISH-SENCE — Intelligent Phishing Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #050a0f;
+    --surface: #0a1520;
+    --card: #0d1e2e;
+    --border: #0f3d5c;
+    --accent: #00d4ff;
+    --accent2: #ff3c6e;
+    --accent3: #39ff14;
+    --text: #c8e6f5;
+    --muted: #4a7a96;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+    --glow2: 0 0 20px rgba(255,60,110,0.4);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    width: 16px; height: 16px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s, border-color 0.2s;
+    mix-blend-mode: screen;
+  }
+  .cursor-dot {
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCAN LINE */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -100%;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanline 6s linear infinite;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+  @keyframes scanline {
+    0% { top: -2px; }
+    100% { top: 100vh; }
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 4rem;
+    background: rgba(5,10,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-shadow: var(--glow);
+  }
+  .nav-logo span { color: var(--accent2); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0.6rem 1.4rem;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    cursor: none;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .nav-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+    z-index: -1;
+  }
+  .nav-cta:hover { color: var(--bg); }
+  .nav-cta:hover::before { transform: scaleX(1); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+    z-index: 2;
+    text-align: center;
+  }
+
+  .hero-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+    padding: 0.4rem 1rem;
+    margin-bottom: 2rem;
+    display: inline-block;
+    animation: fadeDown 0.8s ease both;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(3rem, 10vw, 7rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 0.5rem;
+    animation: fadeDown 0.8s 0.1s ease both;
+  }
+  .hero-title .ph { color: var(--accent); text-shadow: var(--glow); }
+  .hero-title .ish { color: var(--accent2); text-shadow: var(--glow2); }
+  .hero-title .rest { color: #fff; }
+
+  .hero-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    letter-spacing: 6px;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    text-transform: uppercase;
+    animation: fadeDown 0.8s 0.2s ease both;
+  }
+
+  .hero-desc {
+    max-width: 680px;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    color: #7aaec4;
+    margin-bottom: 3rem;
+    animation: fadeDown 0.8s 0.3s ease both;
+  }
+
+  .hero-btns {
+    display: flex;
+    gap: 1.2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeDown 0.8s 0.4s ease both;
+  }
+
+  .btn-primary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    cursor: none;
+    font-weight: bold;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { box-shadow: var(--glow); transform: translateY(-2px); }
+
+  .btn-secondary {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    cursor: none;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-download {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .btn-download:hover {
+    border-color: var(--accent2);
+    color: #fff;
+    box-shadow: var(--glow2);
+  }
+
+  /* THREAT METER ANIMATION */
+  .hero-visual {
+    margin-top: 4rem;
+    width: 100%;
+    max-width: 800px;
+    position: relative;
+    animation: fadeDown 0.8s 0.5s ease both;
+  }
+
+  .terminal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    text-align: left;
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,212,255,0.08);
+  }
+  .terminal-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    align-items: center;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: var(--accent2); }
+  .dot.y { background: #ffbb33; }
+  .dot.g { background: var(--accent3); }
+  .term-title {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-left: 0.5rem;
+  }
+  .term-line { margin-bottom: 0.4rem; color: #4a7a96; }
+  .term-line .p { color: var(--accent3); }
+  .term-line .w { color: #fff; }
+  .term-line .d { color: var(--accent2); }
+  .term-line .a { color: var(--accent); }
+  .term-line .n { color: #ffbb33; }
+  .blink {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* STATS */
+  .stats-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 4rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+  .stat-item { text-align: center; }
+  .stat-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-top: 0.4rem;
+    text-transform: uppercase;
+  }
+  .stat-div { width: 1px; height: 50px; background: var(--border); }
+
+  /* SECTIONS */
+  section { position: relative; z-index: 2; }
+
+  .section-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+  .section-desc {
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    max-width: 600px;
+  }
+
+  /* HOW IT WORKS */
+  .how {
+    padding: 7rem 4rem;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  .steps { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 3rem; }
+  .step {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 1.2rem 1.5rem;
+    border-left: 2px solid var(--border);
+    transition: border-color 0.3s, background 0.3s;
+    cursor: default;
+  }
+  .step:hover { border-color: var(--accent); background: rgba(0,212,255,0.03); }
+  .step-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--border);
+    line-height: 1;
+    min-width: 48px;
+    transition: color 0.3s;
+  }
+  .step:hover .step-num { color: var(--accent); }
+  .step-content h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.3rem;
+    letter-spacing: 1px;
+  }
+  .step-content p { font-size: 0.95rem; color: var(--muted); line-height: 1.6; }
+
+  /* PIPELINE VISUAL */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    box-shadow: 0 0 40px rgba(0,212,255,0.05);
+  }
+  .pipe-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    position: relative;
+  }
+  .pipe-step:last-child { border-bottom: none; }
+  .pipe-icon {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: var(--card);
+  }
+  .pipe-label { color: var(--text); flex: 1; }
+  .pipe-status {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0;
+  }
+  .pipe-status.ok { color: var(--accent3); border: 1px solid var(--accent3); }
+  .pipe-status.warn { color: #ffbb33; border: 1px solid #ffbb33; }
+  .pipe-status.alert { color: var(--accent2); border: 1px solid var(--accent2); animation: pulse-red 1.5s infinite; }
+  @keyframes pulse-red { 50% { opacity: 0.4; } }
+
+  /* FEATURES */
+  .features {
+    padding: 7rem 4rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .features-inner { max-width: 1300px; margin: 0 auto; }
+  .features-header { text-align: center; margin-bottom: 4rem; }
+  .features-header .section-desc { margin: 0 auto; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    background: var(--border);
+  }
+  .feat-card {
+    background: var(--card);
+    padding: 2.5rem;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0);
+    transition: transform 0.4s;
+    transform-origin: left;
+  }
+  .feat-card:hover { background: rgba(13,30,46,0.9); }
+  .feat-card:hover::before { transform: scaleX(1); }
+  .feat-icon {
+    font-size: 2rem;
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+  .feat-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.8rem;
+    letter-spacing: 1px;
+  }
+  .feat-desc { font-size: 0.95rem; color: var(--muted); line-height: 1.7; }
+
+  /* TEAM */
+  .team {
+    padding: 7rem 4rem;
+    max-width: 1300px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .team-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .team-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,212,255,0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .team-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+  .team-card:hover::after { opacity: 1; }
+  .team-avatar {
+    width: 70px; height: 70px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 auto 1.5rem;
+    background: var(--surface);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .team-card:hover .team-avatar { border-color: var(--accent); box-shadow: var(--glow); }
+  .team-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.3rem;
+    letter-spacing: 1px;
+  }
+  .team-roll {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .team-role {
+    font-size: 0.9rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  /* DEMO SCANNER */
+  .demo {
+    padding: 7rem 4rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .demo-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .scanner-box {
+    margin-top: 3rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+  }
+  .scanner-input-row {
+    display: flex;
+    gap: 0;
+  }
+  .scanner-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.9rem 1.2rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .scanner-input:focus { border-color: var(--accent); }
+  .scanner-input::placeholder { color: var(--muted); }
+  .scanner-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 0.9rem 2rem;
+    cursor: none;
+    font-weight: bold;
+    transition: all 0.3s;
+  }
+  .scanner-btn:hover { background: #fff; box-shadow: var(--glow); }
+
+  .scanner-result {
+    margin-top: 1.5rem;
+    padding: 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    text-align: left;
+    display: none;
+  }
+  .scanner-result.show { display: block; }
+  .result-row { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border-bottom: none; }
+  .result-key { color: var(--muted); }
+  .result-safe { color: var(--accent3); }
+  .result-danger { color: var(--accent2); }
+  .result-warn { color: #ffbb33; }
+
+  /* TECH STACK */
+  .tech {
+    padding: 5rem 4rem;
+    max-width: 1300px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+  }
+  .chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1.2rem;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .chip:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* FOOTER */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 3rem 4rem;
+    position: relative;
+    z-index: 2;
+  }
+  .footer-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+  .footer-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+  }
+  .footer-logo span { color: var(--accent2); }
+  .footer-copy {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+  .footer-links { display: flex; gap: 2rem; }
+  .footer-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* ANIMATIONS */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* THREAT COUNTER ANIMATION */
+  @keyframes countUp {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .how { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 1.5rem; }
+    .features { padding: 4rem 1.5rem; }
+    .features-grid { grid-template-columns: 1fr; gap: 1px; }
+    .team-grid { grid-template-columns: 1fr; max-width: 360px; margin: 3rem auto 0; }
+    .team { padding: 4rem 1.5rem; }
+    .demo { padding: 4rem 1.5rem; }
+    .stats-bar { padding: 2rem 1.5rem; }
+    .stat-div { display: none; }
+    .tech { padding: 4rem 1.5rem; }
+    footer { padding: 2rem 1.5rem; }
+    .footer-inner { flex-direction: column; text-align: center; }
+    .scanner-input-row { flex-direction: column; }
+    .scanner-input { border-right: 1px solid var(--border); border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">PHISH<span>-</span>SENCE</div>
+  <ul class="nav-links">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try Scanner</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⚡ AI-POWERED THREAT INTELLIGENCE</div>
+  <h1 class="hero-title">
+    <span class="ph">PHISH</span><span class="ish">-</span><span class="rest">SENCE</span>
+  </h1>
+  <p class="hero-sub">Intelligent Detection of Phishing Threats</p>
+  <p class="hero-desc">
+    Real-time AI defense against phishing attacks. We analyze email content, website visuals, and domain networks simultaneously — catching threats before they catch you.
+  </p>
+  <div class="hero-btns">
+    <a href="#demo" class="btn-primary">Scan a URL</a>
+    <a href="#how" class="btn-secondary">How It Works</a>
+    <a href="https://github.com/Sharan-raj311/PHISH-SENCE/archive/refs/heads/main.zip" class="btn-secondary btn-download" download>Download ZIP</a>
+  </div>
+
+  <div class="hero-visual">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot r"></div>
+        <div class="dot y"></div>
+        <div class="dot g"></div>
+        <span class="term-title">PHISH-SENCE // LIVE ANALYSIS</span>
+      </div>
+      <div class="term-line">[<span class="p">INIT</span>] Loading AI threat models... <span class="a">DONE</span></div>
+      <div class="term-line">[<span class="p">SCAN</span>] Analyzing URL: <span class="w">http://secure-paypa1-verify.xyz/login</span></div>
+      <div class="term-line">[<span class="n">NLP </span>] Text content analysis... <span class="d">SUSPICIOUS LANGUAGE DETECTED</span></div>
+      <div class="term-line">[<span class="n">VIS </span>] Visual similarity check... <span class="d">BRAND IMPERSONATION: PayPal (94%)</span></div>
+      <div class="term-line">[<span class="n">NET </span>] Domain graph traversal... <span class="d">LINKED TO 3 KNOWN PHISHING CLUSTERS</span></div>
+      <div class="term-line">[<span class="n">SBX </span>] Sandbox isolation... <span class="a">QUARANTINED</span></div>
+      <div class="term-line">[<span class="d">ALERT</span>] ⚠ PHISHING THREAT CONFIRMED — THREAT SCORE: <span class="d">97/100</span></div>
+      <div class="term-line"><span class="blink"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-num" data-target="97">97%</div>
+    <div class="stat-label">Detection Accuracy</div>
+  </div>
+  <div class="stat-div"></div>
+  <div class="stat-item">
+    <div class="stat-num">3</div>
+    <div class="stat-label">AI Detection Layers</div>
+  </div>
+  <div class="stat-div"></div>
+  <div class="stat-item">
+    <div class="stat-num">&lt;1s</div>
+    <div class="stat-label">Real-Time Analysis</div>
+  </div>
+  <div class="stat-div"></div>
+  <div class="stat-item">
+    <div class="stat-num">0</div>
+    <div class="stat-label">Performance Impact</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="how">
+    <div class="reveal">
+      <div class="section-tag">// Process</div>
+      <h2 class="section-title">Multi-Layer<br/>Threat Detection</h2>
+      <p class="section-desc">PHISH-SENCE doesn't rely on static rules. Our AI pipeline processes multiple signals simultaneously to deliver fast, accurate phishing detection.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h4>Input Interception</h4>
+            <p>Browser extension or email plugin intercepts incoming URLs and messages before the user interacts.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h4>Parallel AI Analysis</h4>
+            <p>NLP, computer vision, and graph neural networks run simultaneously on the intercepted content.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h4>Threat Scoring</h4>
+            <p>Results are fused into a unified threat score with confidence levels and detailed explanations.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h4>Isolation & Alert</h4>
+            <p>Confirmed threats are sandboxed instantly. The user receives a real-time alert with threat details.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal" style="transition-delay: 0.2s;">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon">🌐</div>
+          <div class="pipe-label">Input URL / Email</div>
+          <div class="pipe-status ok">RECEIVED</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🧠</div>
+          <div class="pipe-label">NLP Text Analysis</div>
+          <div class="pipe-status warn">ANALYZING</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon">👁</div>
+          <div class="pipe-label">Visual Inspection</div>
+          <div class="pipe-status alert">FLAGGED</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🕸</div>
+          <div class="pipe-label">Domain Graph Analysis</div>
+          <div class="pipe-status alert">FLAGGED</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔒</div>
+          <div class="pipe-label">Sandbox Isolation</div>
+          <div class="pipe-status ok">ACTIVE</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-icon">⚠</div>
+          <div class="pipe-label">Threat Score: 97/100</div>
+          <div class="pipe-status alert">BLOCKED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="features">
+  <div class="features-inner">
+    <div class="features-header reveal">
+      <div class="section-tag">// Capabilities</div>
+      <h2 class="section-title">Intelligent by Design</h2>
+      <p class="section-desc">Six core capabilities that make PHISH-SENCE unlike any traditional security tool.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <span class="feat-icon">🧠</span>
+        <div class="feat-title">NLP Text Analysis</div>
+        <p class="feat-desc">Examines the linguistic patterns of emails and messages to detect urgency cues, fear-inducing language, and suspicious phrasing used by attackers.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">👁️</span>
+        <div class="feat-title">Visual Website Inspection</div>
+        <p class="feat-desc">Uses computer vision to compare webpage layouts against a database of trusted brands, catching pixel-perfect spoofs of PayPal, banks, and more.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🕸️</span>
+        <div class="feat-title">Domain Graph Analysis</div>
+        <p class="feat-desc">Maps relationships between domains, servers, and IPs using graph neural networks to uncover hidden phishing networks and shared infrastructure.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🔒</span>
+        <div class="feat-title">Sandboxed Isolation</div>
+        <p class="feat-desc">Suspicious links are opened in an isolated sandbox environment to safely observe behavior — keystroke loggers, redirects, and credential harvesting are logged.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">⚡</span>
+        <div class="feat-title">Real-Time Protection</div>
+        <p class="feat-desc">All analysis happens in under one second. Lightweight browser extensions and email plugins integrate seamlessly without slowing down your workflow.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🔄</span>
+        <div class="feat-title">Adaptive Learning</div>
+        <p class="feat-desc">Unlike rule-based systems, PHISH-SENCE continuously learns from new threat data, adapting to emerging attack patterns without manual updates.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO SCANNER -->
+<section id="demo" class="demo">
+  <div class="demo-inner">
+    <div class="reveal">
+      <div class="section-tag">// Live Demo</div>
+      <h2 class="section-title">Scan a URL</h2>
+      <p class="section-desc" style="margin: 0 auto;">Enter any URL or paste a suspicious email link below to simulate a real-time PHISH-SENCE analysis.</p>
+    </div>
+    <div class="scanner-box reveal" style="transition-delay: 0.2s;">
+      <div class="scanner-input-row">
+        <input class="scanner-input" id="urlInput" type="text" placeholder="https://example-suspicious-url.com/login" />
+        <button class="scanner-btn" onclick="runScan()">SCAN</button>
+      </div>
+      <div class="scanner-result" id="scanResult">
+        <div class="result-row"><span class="result-key">URL</span><span id="r-url" class="result-warn">—</span></div>
+        <div class="result-row"><span class="result-key">NLP TEXT ANALYSIS</span><span id="r-nlp">—</span></div>
+        <div class="result-row"><span class="result-key">VISUAL INSPECTION</span><span id="r-vis">—</span></div>
+        <div class="result-row"><span class="result-key">DOMAIN GRAPH</span><span id="r-net">—</span></div>
+        <div class="result-row"><span class="result-key">THREAT SCORE</span><span id="r-score">—</span></div>
+        <div class="result-row"><span class="result-key">VERDICT</span><span id="r-verdict">—</span></div>
+      </div>
+    </div>
+    <p style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--muted);margin-top:1rem;letter-spacing:2px;">
+      * This is a simulated demo. Results are illustrative.
+    </p>
+  </div>
+</section>
+
+<!-- TECH -->
+<section class="tech reveal">
+  <div class="section-tag">// Technology Stack</div>
+  <h2 class="section-title">Built With</h2>
+  <div class="tech-chips">
+    <div class="chip">Python</div>
+    <div class="chip">PyTorch</div>
+    <div class="chip">NLP</div>
+    <div class="chip">Computer Vision</div>
+    <div class="chip">Graph Neural Networks</div>
+    <div class="chip">Flask API</div>
+    <div class="chip">Browser Extension</div>
+    <div class="chip">Sandbox Isolation</div>
+    <div class="chip">VirusTotal API</div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="team">
+    <div class="reveal">
+      <div class="section-tag">// Team</div>
+      <h2 class="section-title">Built By</h2>
+      <p class="section-desc" style="margin: 0 auto;">Final Year Project — Malla Reddy University, Computer Science & Engineering (CYBER SECURITY).</p>
+    </div>
+    <div class="team-grid reveal" style="transition-delay: 0.2s;">
+      <div class="team-card">
+        <div class="team-avatar">KB</div>
+        <div class="team-name">K. Bavya</div>
+        <div class="team-role">Lead Developer</div>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">DS</div>
+        <div class="team-name">D. Santhu Sharan</div>
+        <div class="team-role">Security Engineer</div>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">DM</div>
+        <div class="team-name">D. Mohan Mahidhar</div>
+        <div class="team-role">Security Researcher</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">PHISH<span>-</span>SENCE</div>
+    <div class="footer-links">
+      <a href="https://github.com/Sharan-raj311/PHISH-SENCE" target="_blank">GitHub</a>
+    </div>
+    <div class="footer-copy">© 2026 PHISH-SENCE — MALLA REDDY UNIVERSITY</div>
+  </div>
+</footer>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const dot = document.getElementById('cursorDot');
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animCursor() {
+    cx += (mx - cx) * 0.15;
+    cy += (my - cy) * 0.15;
+    cursor.style.left = cx - 8 + 'px';
+    cursor.style.top = cy - 8 + 'px';
+    dot.style.left = mx - 2 + 'px';
+    dot.style.top = my - 2 + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+  document.querySelectorAll('a,button,.feat-card,.step,.chip,.team-card').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(2)');
+    el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
+  });
+
+  // REVEAL ON SCROLL
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.15 });
+  reveals.forEach(r => obs.observe(r));
+
+  // DEMO SCANNER
+  function runScan() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+    const result = document.getElementById('scanResult');
+    result.classList.remove('show');
+
+    const isSusp = url.includes('paypa') || url.includes('secure') || url.includes('verify') ||
+      url.includes('login') || url.includes('bank') || url.includes('update') ||
+      url.includes('.xyz') || url.includes('.tk') || url.includes('.ml');
+    const isSafe = url.startsWith('https://google') || url.startsWith('https://github') ||
+      url.startsWith('https://anthropic') || url.startsWith('https://youtube');
+
+    let score, nlp, vis, net, verdict, scoreClass;
+    if (isSafe) {
+      score = Math.floor(Math.random() * 8) + 1;
+      nlp = 'CLEAN'; vis = 'NO BRAND MATCH'; net = 'TRUSTED DOMAIN';
+      verdict = '✅ SAFE'; scoreClass = 'result-safe';
+    } else if (isSusp) {
+      score = Math.floor(Math.random() * 15) + 82;
+      nlp = 'URGENT LANGUAGE DETECTED'; vis = 'BRAND SPOOFING DETECTED';
+      net = 'LINKED TO PHISHING CLUSTER';
+      verdict = '🚨 PHISHING DETECTED — BLOCKED'; scoreClass = 'result-danger';
+    } else {
+      score = Math.floor(Math.random() * 35) + 30;
+      nlp = score > 50 ? 'MILD SUSPICIOUS LANGUAGE' : 'CLEAN';
+      vis = score > 50 ? 'PARTIAL MATCH' : 'NO BRAND MATCH';
+      net = score > 50 ? 'UNVERIFIED DOMAIN' : 'NO LINKS FOUND';
+      verdict = score > 50 ? '⚠ SUSPICIOUS — PROCEED WITH CAUTION' : '✅ LIKELY SAFE';
+      scoreClass = score > 50 ? 'result-warn' : 'result-safe';
+    }
+
+    setTimeout(() => {
+      document.getElementById('r-url').textContent = url.length > 50 ? url.substring(0,50)+'...' : url;
+      document.getElementById('r-nlp').textContent = nlp;
+      document.getElementById('r-nlp').className = scoreClass;
+      document.getElementById('r-vis').textContent = vis;
+      document.getElementById('r-vis').className = scoreClass;
+      document.getElementById('r-net').textContent = net;
+      document.getElementById('r-net').className = scoreClass;
+      document.getElementById('r-score').textContent = score + '/100';
+      document.getElementById('r-score').className = scoreClass;
+      document.getElementById('r-verdict').textContent = verdict;
+      document.getElementById('r-verdict').className = scoreClass;
+      result.classList.add('show');
+    }, 800);
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runScan();
+  });
+</script>
+</body>
+</html>
