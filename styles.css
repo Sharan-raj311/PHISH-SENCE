@@ -1,0 +1,11 @@
+
+#phishsence-banner {
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+}
